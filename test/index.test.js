@@ -1,8 +1,9 @@
 const childProcess = require('child_process');
 const assert = require('assert');
 const path = require('path');
+const pkg = require('../package.json');
 
-const bin = path.resolve(__dirname, '../build/deno-mocha-runner.js');
+const bin = path.resolve(__dirname, '../', pkg.bin);
 
 async function run(patterns) {
   const cp = childProcess.spawn(process.execPath, [bin, ...patterns], {

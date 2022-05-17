@@ -1,14 +1,17 @@
 {
-  "name": "deno-mocha-runner",
+  "name": "@midwayjs/deno-mocha",
   "version": "1.0.0",
   "description": "",
-  "bin": "build/deno-mocha-runner.ts",
+  "bin": "build/deno-mocha.js",
   "files": [
     "build",
     "mods"
   ],
+  "repository": {
+    "url": "https://github.com/midwayjs/deno-mocha"
+  },
   "scripts": {
-    "build": "esbuild --outdir=build --platform=node --format=cjs src/deno-mocha-runner.ts",
+    "build": "esbuild --outdir=build --platform=node --format=cjs src/deno-mocha.ts",
     "prepare": "npm run build",
     "test": "mocha test/*.test.js"
   },
