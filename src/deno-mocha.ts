@@ -4,6 +4,7 @@ import glob from 'fast-glob';
 import fs from 'fs/promises';
 import path from 'path';
 import childProcess from 'child_process';
+import mustache from 'mustache';
 
 const kHelp = `
 deno-mocha [options] ...<file-pattern>
@@ -13,11 +14,15 @@ deno-mocha [options] ...<file-pattern>
 
 const modsDir = path.join(__dirname, '../mods');
 
-const importMap = new Map<string, string>([
-  ['assert', 'https://deno.land/std@0.139.0/node/assert.ts'],
-]);
+function getImportMap(stdVersion) {
+  const prefix = `https://deno.land/std@${stdVersion}/`;
+  const importMap = new Map<string, string>([
+    ['assert', 'node/assert.ts'],
+  ].map(it => [it[0], prefix + it[1]]));
+  return importMap;
+}
 
-async function startServer(host: string, port: number, patterns: string[], excludePatterns: string[]) {
+async function startServer(host: string, port: number, patterns: string[], excludePatterns: string[], stdVersion: string) {
   const matches = patterns.flatMap(p => {
     return glob.sync(p, {
       cwd: process.cwd(),
@@ -34,6 +39,7 @@ ${
 }
 `;
 
+  const importMap = getImportMap(stdVersion);
   const ImportMapPlugin: esbuild.Plugin = {
     name: 'import-map',
     setup(build) {
@@ -68,7 +74,9 @@ ${
 
         const file = await fs.readFile(path.join(modsDir, args.path.substring(5)), 'utf8');
         return {
-          contents: file,
+          contents: mustache.render(file, {
+            stdVersion,
+          }),
           resolveDir: modsDir,
         };
       });
@@ -116,6 +124,7 @@ async function main() {
     '--port': Number,
     '--host': String,
     '--deno': String,
+    '--std-version': String,
     '--exclude': [String],
     '--help': Boolean,
   }, {
@@ -130,11 +139,12 @@ async function main() {
   const port = opt['--port'] ?? 8888;
   const host = opt['--host'] ?? '127.0.0.1';
   const deno = opt['--deno'] ?? 'deno';
+  const stdVersion = opt['--std-version'] ?? '0.139.0';
 
   const excludePatterns = opt['--exclude'] ?? [];
   const patterns = opt._;
 
-  const server = await startServer(host, port, patterns, excludePatterns);
+  const server = await startServer(host, port, patterns, excludePatterns, stdVersion);
 
   try {
     await denoTest(deno, `http://${host}:${port}/index.js`);

@@ -5,7 +5,7 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.139.0/testing/bdd.ts";
+} from "https://deno.land/std@{{stdVersion}}/testing/bdd.ts";
 
 Object.assign(globalThis, {
   beforeAll,
