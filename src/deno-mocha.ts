@@ -1,9 +1,15 @@
 import esbuild from 'esbuild';
 import arg from 'arg';
-import glob from 'glob';
+import glob from 'fast-glob';
 import fs from 'fs/promises';
 import path from 'path';
 import childProcess from 'child_process';
+
+const kHelp = `
+deno-mocha [options] ...<file-pattern>
+
+  --exclude <file-pattern>            exclude files by pattern
+`;
 
 const modsDir = path.join(__dirname, '../mods');
 
@@ -11,11 +17,11 @@ const importMap = new Map<string, string>([
   ['assert', 'https://deno.land/std@0.139.0/node/assert.ts'],
 ]);
 
-async function startServer(host: string, port: number, patterns: string[]) {
+async function startServer(host: string, port: number, patterns: string[], excludePatterns: string[]) {
   const matches = patterns.flatMap(p => {
     return glob.sync(p, {
       cwd: process.cwd(),
-      ignore: ['node_modules'],
+      ignore: ['**/node_modules', ...excludePatterns],
     });
   });
 
@@ -110,16 +116,25 @@ async function main() {
     '--port': Number,
     '--host': String,
     '--deno': String,
+    '--exclude': [String],
+    '--help': Boolean,
   }, {
     argv: process.argv.slice(2),
   });
 
+  if (opt['--help']) {
+    console.log(kHelp);
+    return;
+  }
+
   const port = opt['--port'] ?? 8888;
   const host = opt['--host'] ?? '127.0.0.1';
   const deno = opt['--deno'] ?? 'deno';
+
+  const excludePatterns = opt['--exclude'] ?? [];
   const patterns = opt._;
 
-  const server = await startServer(host, port, patterns);
+  const server = await startServer(host, port, patterns, excludePatterns);
 
   try {
     await denoTest(deno, `http://${host}:${port}/index.js`);
