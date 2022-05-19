@@ -23,17 +23,19 @@ async function run(args) {
 
   return new Promise((resolve, reject) => {
     cp.on('exit', (code, signal) => {
+      const texts = {
+        stdout: [],
+        stderr: [],
+      };
+      for (const type of Object.keys(output)) {
+        texts[type] = Buffer.concat(output[type]).toString('utf8');
+      }
       if (code === 0) {
-        const texts = {
-          stdout: [],
-          stderr: [],
-        };
-        for (const type of Object.keys(output)) {
-          texts[type] = Buffer.concat(output[type]).toString('utf8');
-        }
         return resolve(texts);
       }
-      reject(new Error(`test failed: code(${code}), signal(${signal})`));
+      const err = new Error(`test failed: code(${code}), signal(${signal})`)
+      Object.assign(err, texts);
+      reject(err);
     });
   });
 }
@@ -50,6 +52,18 @@ describe('deno-mocha-runner', function () {
 
   it('should exclude tests', async () => {
     await run(['--exclude', 'test/integration/exclude/foo', 'test/integration/exclude/**/*.test.ts']);
+  });
+
+  it('should skip non-only tests', async () => {
+    try {
+      await run(['test/integration/only/*.test.ts']);
+    } catch (e) {
+      assert.match(e.stderr, /Test failed because the "only" option was used/);
+    }
+  });
+
+  it('should skip tests', async () => {
+    await run(['test/integration/skip/*.test.ts']);
   });
 
   it('should print help', async () => {

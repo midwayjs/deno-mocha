@@ -74,6 +74,7 @@ ${
 
         const file = await fs.readFile(path.join(modsDir, args.path.substring(5)), 'utf8');
         return {
+          loader: 'ts',
           contents: mustache.render(file, {
             stdVersion,
           }),
@@ -103,8 +104,8 @@ ${
   return server;
 }
 
-async function denoTest(denoExecPath, url) {
-  const cp = childProcess.spawn(denoExecPath, ['test', '-r', `--location=${url}`, url], {
+async function denoTest(denoExecPath, url, argv) {
+  const cp = childProcess.spawn(denoExecPath, ['test', '-r', `--location=${url}`, ...argv, url], {
     stdio: 'inherit',
   });
   return new Promise<void>((resolve, reject) => {
@@ -129,6 +130,7 @@ async function main() {
     '--help': Boolean,
   }, {
     argv: process.argv.slice(2),
+    permissive: true,
   });
 
   if (opt['--help']) {
@@ -142,12 +144,14 @@ async function main() {
   const stdVersion = opt['--std-version'] ?? '0.139.0';
 
   const excludePatterns = opt['--exclude'] ?? [];
-  const patterns = opt._;
+  const patternsIndex = opt._.findIndex(it => !it.startsWith('-'));
+  const patterns = opt._.slice(patternsIndex);
+  const argv = opt._.slice(0, patternsIndex);
 
   const server = await startServer(host, port, patterns, excludePatterns, stdVersion);
 
   try {
-    await denoTest(deno, `http://${host}:${port}/index.js`);
+    await denoTest(deno, `http://${host}:${port}/index.js`, argv);
   } catch (e: any) {
     if (e.exitCode) {
       process.exitCode = e.exitCode;
