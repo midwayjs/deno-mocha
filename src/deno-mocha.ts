@@ -6,10 +6,12 @@ import path from 'path';
 import childProcess from 'child_process';
 import mustache from 'mustache';
 
+const kDefaultStdVersion = '0.140.0';
 const kHelp = `
 deno-mocha [options] ...<file-pattern>
 
-  --exclude <file-pattern>            exclude files by pattern
+  --exclude <file-pattern>            exclude files by pattern.
+  --std-version <version>             Deno std library version to be used. Default: ${kDefaultStdVersion}
 `;
 
 const modsDir = path.join(__dirname, '../mods');
@@ -156,7 +158,7 @@ async function main() {
   const port = opt['--port'] ?? 8888;
   const host = opt['--host'] ?? '127.0.0.1';
   const deno = opt['--deno'] ?? 'deno';
-  const stdVersion = opt['--std-version'] ?? '0.139.0';
+  const stdVersion = opt['--std-version'] ?? kDefaultStdVersion;
 
   const excludePatterns = opt['--exclude'] ?? [];
   const patternsIndex = opt._.findIndex((it) => !it.startsWith('-'));
