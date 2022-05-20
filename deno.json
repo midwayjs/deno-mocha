@@ -1,0 +1,15 @@
+{
+  "lint": {
+    "files": {
+      "include": ["mods/", "src/", "test/"]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["mods/", "src/", "test/"]
+    },
+    "options": {
+      "singleQuote": true
+    }
+  }
+}

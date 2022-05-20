@@ -18,12 +18,18 @@ function getImportMap(stdVersion) {
   const prefix = `https://deno.land/std@${stdVersion}/`;
   const importMap = new Map<string, string>([
     ['assert', 'node/assert.ts'],
-  ].map(it => [it[0], prefix + it[1]]));
+  ].map((it) => [it[0], prefix + it[1]]));
   return importMap;
 }
 
-async function startServer(host: string, port: number, patterns: string[], excludePatterns: string[], stdVersion: string) {
-  const matches = patterns.flatMap(p => {
+async function startServer(
+  host: string,
+  port: number,
+  patterns: string[],
+  excludePatterns: string[],
+  stdVersion: string,
+) {
+  const matches = patterns.flatMap((p) => {
     return glob.sync(p, {
       cwd: process.cwd(),
       ignore: ['**/node_modules', ...excludePatterns],
@@ -34,9 +40,7 @@ async function startServer(host: string, port: number, patterns: string[], exclu
   const kEntryContents = `
 import '!dmr:bdd-global.ts';
 
-${
-  matches.map(it => `import './${it}';`).join('\n')
-}
+${matches.map((it) => `import './${it}';`).join('\n')}
 `;
 
   const importMap = getImportMap(stdVersion);
@@ -55,7 +59,7 @@ ${
           return {
             path: importMap.get(args.path),
             namespace: args.path,
-            external: true
+            external: true,
           };
         }
         return null;
@@ -72,7 +76,10 @@ ${
           };
         }
 
-        const file = await fs.readFile(path.join(modsDir, args.path.substring(5)), 'utf8');
+        const file = await fs.readFile(
+          path.join(modsDir, args.path.substring(5)),
+          'utf8',
+        );
         return {
           loader: 'ts',
           contents: mustache.render(file, {
@@ -82,7 +89,7 @@ ${
         };
       });
     },
-  }
+  };
 
   const server = await esbuild.serve({
     host,
@@ -104,8 +111,14 @@ ${
   return server;
 }
 
-async function denoTest(denoExecPath, url, argv) {
-  const cp = childProcess.spawn(denoExecPath, ['test', '-r', `--location=${url}`, ...argv, url], {
+function denoTest(denoExecPath, url, argv) {
+  const cp = childProcess.spawn(denoExecPath, [
+    'test',
+    '-r',
+    `--location=${url}`,
+    ...argv,
+    url,
+  ], {
     stdio: 'inherit',
   });
   return new Promise<void>((resolve, reject) => {
@@ -113,7 +126,9 @@ async function denoTest(denoExecPath, url, argv) {
       if (code === 0) {
         return resolve();
       }
-      const err = new Error(`Deno test failed: code(${code}), signal(${signal})`);
+      const err = new Error(
+        `Deno test failed: code(${code}), signal(${signal})`,
+      );
       (err as any).exitCode = code;
       reject(err);
     });
@@ -144,11 +159,17 @@ async function main() {
   const stdVersion = opt['--std-version'] ?? '0.139.0';
 
   const excludePatterns = opt['--exclude'] ?? [];
-  const patternsIndex = opt._.findIndex(it => !it.startsWith('-'));
+  const patternsIndex = opt._.findIndex((it) => !it.startsWith('-'));
   const patterns = opt._.slice(patternsIndex);
   const argv = opt._.slice(0, patternsIndex);
 
-  const server = await startServer(host, port, patterns, excludePatterns, stdVersion);
+  const server = await startServer(
+    host,
+    port,
+    patterns,
+    excludePatterns,
+    stdVersion,
+  );
 
   try {
     await denoTest(deno, `http://${host}:${port}/index.js`, argv);
@@ -163,8 +184,7 @@ async function main() {
   }
 }
 
-
-main().catch(e => {
+main().catch((e) => {
   console.error('unexpected error:', e);
   process.exitCode = 1;
 });

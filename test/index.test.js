@@ -5,7 +5,7 @@ const pkg = require('../package.json');
 
 const bin = path.resolve(__dirname, '../', pkg.bin);
 
-async function run(args) {
+function run(args) {
   const cp = childProcess.spawn(process.execPath, [bin, ...args], {
     stdio: 'pipe',
   });
@@ -16,7 +16,7 @@ async function run(args) {
   };
   for (const type of Object.keys(output)) {
     cp[type].pipe(process[type]);
-    cp[type].on('data', chunk => {
+    cp[type].on('data', (chunk) => {
       output[type].push(chunk);
     });
   }
@@ -33,7 +33,7 @@ async function run(args) {
       if (code === 0) {
         return resolve(texts);
       }
-      const err = new Error(`test failed: code(${code}), signal(${signal})`)
+      const err = new Error(`test failed: code(${code}), signal(${signal})`);
       Object.assign(err, texts);
       reject(err);
     });
@@ -47,11 +47,18 @@ describe('deno-mocha-runner', function () {
   });
 
   it('should fail test', async () => {
-    await assert.rejects(run(['test/integration/failures/*.test.ts']), /test failed: code\(1\)/)
+    await assert.rejects(
+      run(['test/integration/failures/*.test.ts']),
+      /test failed: code\(1\)/,
+    );
   });
 
   it('should exclude tests', async () => {
-    await run(['--exclude', 'test/integration/exclude/foo', 'test/integration/exclude/**/*.test.ts']);
+    await run([
+      '--exclude',
+      'test/integration/exclude/foo',
+      'test/integration/exclude/**/*.test.ts',
+    ]);
   });
 
   it('should skip non-only tests', async () => {

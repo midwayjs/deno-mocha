@@ -14,6 +14,7 @@
   "scripts": {
     "build": "esbuild --outdir=build --platform=node --format=cjs src/deno-mocha.ts",
     "prepare": "npm run build",
+    "lint:fix": "deno fmt",
     "test": "mocha test/*.test.js"
   },
   "author": "The Midway Authors",

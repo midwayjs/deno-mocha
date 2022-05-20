@@ -1,11 +1,11 @@
 import {
-  beforeAll,
   afterAll,
   afterEach,
+  beforeAll,
   beforeEach,
   describe,
   it as denoIt,
-} from "https://deno.land/std@{{stdVersion}}/testing/bdd.ts";
+} from 'https://deno.land/std@{{stdVersion}}/testing/bdd.ts';
 
 describe.skip = describe.ignore;
 
@@ -14,7 +14,7 @@ function it(title, fn) {
     return denoIt(title, fn);
   }
 
-  denoIt(title, async () => {
+  denoIt(title, () => {
     return new Promise<void>((resolve, reject) => {
       fn((err) => {
         if (err) {
