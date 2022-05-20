@@ -3,30 +3,58 @@ import {
   afterEach,
   beforeAll,
   beforeEach,
-  describe,
+  describe as denoDescribe,
   it as denoIt,
 } from 'https://deno.land/std@{{stdVersion}}/testing/bdd.ts';
 
-describe.skip = describe.ignore;
+const sanitizeOps = `{{sanitizeOps}}` === ('true') as string;
+const sanitizeResources = `{{sanitizeResources}}` === ('true') as string;
 
-function it(title, fn) {
-  if (fn.length === 0) {
-    return denoIt(title, fn);
+function createDescribe(realDescribe) {
+  function describe(name, fn) {
+    realDescribe({
+      name,
+      sanitizeOps,
+      sanitizeResources,
+    }, fn);
   }
+  return describe as any;
+}
+const describe = createDescribe(denoDescribe);
+describe.skip = createDescribe(denoDescribe.ignore);
+describe.only = createDescribe(denoDescribe.only);
 
-  denoIt(title, () => {
-    return new Promise<void>((resolve, reject) => {
-      fn((err) => {
-        if (err) {
-          return reject(err);
-        }
-        return resolve();
+function createIt(realIt) {
+  function it(name, fn) {
+    if (fn.length === 0) {
+      return realIt({
+        name,
+        sanitizeOps,
+        sanitizeResources,
+      }, fn);
+    }
+
+    realIt({
+      name,
+      sanitizeOps,
+      sanitizeResources,
+    }, () => {
+      return new Promise<void>((resolve, reject) => {
+        fn((err) => {
+          if (err) {
+            return reject(err);
+          }
+          return resolve();
+        });
       });
     });
-  });
+  }
+
+  return it as any;
 }
-it.skip = denoIt.ignore;
-it.only = denoIt.only;
+const it = createIt(denoIt);
+it.skip = createIt(denoIt.ignore);
+it.only = createIt(denoIt.only);
 
 Object.assign(globalThis, {
   beforeAll,

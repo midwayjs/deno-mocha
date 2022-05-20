@@ -73,6 +73,21 @@ describe('deno-mocha-runner', function () {
     await run(['test/integration/skip/*.test.ts']);
   });
 
+  it('should ignore resource leaking tests', async () => {
+    await run(['test/integration/sanitize-resources/*.test.ts']);
+  });
+
+  it('should sanitize resource leaking tests', async () => {
+    try {
+      await run([
+        '--sanitize-resources',
+        'test/integration/sanitize-resources/*.test.ts',
+      ]);
+    } catch (e) {
+      assert.match(e.stdout, /Test case is leaking 1 resource/);
+    }
+  });
+
   it('should print help', async () => {
     const out = await run(['--help']);
     assert.match(out.stdout, /deno-mocha \[options\]/);

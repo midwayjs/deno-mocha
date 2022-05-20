@@ -10,8 +10,10 @@ const kDefaultStdVersion = '0.140.0';
 const kHelp = `
 deno-mocha [options] ...<file-pattern>
 
-  --exclude <file-pattern>            exclude files by pattern.
+  --exclude <file-pattern>            Exclude files by pattern.
   --std-version <version>             Deno std library version to be used. Default: ${kDefaultStdVersion}
+  --sanitize-ops                      Check that the number of async completed ops after the test is the same as number of dispatched ops. Default: false
+  --sanitize-resources                Ensure the test case does not "leak" resources. Default: false
 `;
 
 const modsDir = path.join(__dirname, '../mods');
@@ -24,12 +26,18 @@ function getImportMap(stdVersion) {
   return importMap;
 }
 
+interface TestContext {
+  stdVersion: string;
+  sanitizeOps: boolean;
+  sanitizeResources: boolean;
+}
+
 async function startServer(
   host: string,
   port: number,
   patterns: string[],
   excludePatterns: string[],
-  stdVersion: string,
+  testContext: TestContext,
 ) {
   const matches = patterns.flatMap((p) => {
     return glob.sync(p, {
@@ -45,7 +53,7 @@ import '!dmr:bdd-global.ts';
 ${matches.map((it) => `import './${it}';`).join('\n')}
 `;
 
-  const importMap = getImportMap(stdVersion);
+  const importMap = getImportMap(testContext.stdVersion);
   const ImportMapPlugin: esbuild.Plugin = {
     name: 'import-map',
     setup(build) {
@@ -84,9 +92,7 @@ ${matches.map((it) => `import './${it}';`).join('\n')}
         );
         return {
           loader: 'ts',
-          contents: mustache.render(file, {
-            stdVersion,
-          }),
+          contents: mustache.render(file, testContext),
           resolveDir: modsDir,
         };
       });
@@ -144,6 +150,8 @@ async function main() {
     '--deno': String,
     '--std-version': String,
     '--exclude': [String],
+    '--sanitize-ops': Boolean,
+    '--sanitize-resources': Boolean,
     '--help': Boolean,
   }, {
     argv: process.argv.slice(2),
@@ -159,6 +167,8 @@ async function main() {
   const host = opt['--host'] ?? '127.0.0.1';
   const deno = opt['--deno'] ?? 'deno';
   const stdVersion = opt['--std-version'] ?? kDefaultStdVersion;
+  const sanitizeOps = opt['--sanitize-ops'] ?? false;
+  const sanitizeResources = opt['--sanitize-resources'] ?? false;
 
   const excludePatterns = opt['--exclude'] ?? [];
   const patternsIndex = opt._.findIndex((it) => !it.startsWith('-'));
@@ -170,7 +180,11 @@ async function main() {
     port,
     patterns,
     excludePatterns,
-    stdVersion,
+    {
+      stdVersion,
+      sanitizeOps,
+      sanitizeResources,
+    },
   );
 
   try {
